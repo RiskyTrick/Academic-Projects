@@ -1,0 +1,250 @@
+import os
+import sys
+from PyQt5.QtWidgets import (
+    QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QWidget,
+    QPushButton, QLabel, QListWidget, QComboBox, QTextEdit, QStackedWidget
+)
+from PyQt5.QtGui import QIcon, QFont
+from PyQt5.QtCore import Qt
+from VoiceControls import VoiceControls
+from Transcription import transcribe_audio
+
+class TherapyApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("CFS Session Documentor")
+        self.setGeometry(100, 100, 1200, 800)
+
+        # VoiceControls instance
+        self.voice_control = VoiceControls()
+
+        # UI Setup
+        self.init_ui()
+
+    def init_ui(self):
+        # Central widget
+        central_widget = QWidget()
+        self.setCentralWidget(central_widget)
+
+        # Main layout
+        main_layout = QVBoxLayout()
+        central_widget.setLayout(main_layout)
+
+        # Top section with main content
+        top_layout = QHBoxLayout()
+
+        # Sidebar navigation
+        sidebar_container = QWidget()
+        sidebar_layout = QVBoxLayout(sidebar_container)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(10)
+        sidebar_container.setStyleSheet("background-color: #2b2d42; padding: 20px;")
+
+        self.dashboard_button = QPushButton("Dashboard")
+        self.dashboard_button.setStyleSheet(self.sidebar_button_style())
+        self.dashboard_button.clicked.connect(lambda: self.switch_view(0))
+
+        self.settings_button = QPushButton("Settings")
+        self.settings_button.setStyleSheet(self.sidebar_button_style())
+        self.settings_button.clicked.connect(lambda: self.switch_view(1))
+
+        sidebar_layout.addWidget(self.dashboard_button)
+        sidebar_layout.addWidget(self.settings_button)
+        sidebar_layout.addStretch()
+
+        top_layout.addWidget(sidebar_container, 1)
+
+        # Stacked views for Dashboard and Settings
+        self.stacked_widget = QStackedWidget()
+
+        # Dashboard View
+        self.dashboard_view = QWidget()
+        dashboard_layout = QVBoxLayout()
+
+        self.status_label = QLabel("Status: Idle")
+        self.status_label.setFont(QFont("Arial", 14, QFont.Bold))
+        self.status_label.setAlignment(Qt.AlignCenter)
+        self.status_label.setStyleSheet(
+            "color: #ffffff; padding: 10px; background-color: #3f72af; border-radius: 10px;"
+        )
+
+        self.transcript_text = QTextEdit()
+        self.transcript_text.setPlaceholderText("Transcript will appear here...")
+        self.transcript_text.setReadOnly(True)
+        self.transcript_text.setStyleSheet(
+            "background-color: #f9f9f9; border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
+        )
+
+        self.sessions_list = QListWidget()
+        self.sessions_list.setStyleSheet(
+            "QListWidget { border: 1px solid #ccc; border-radius: 5px; background: #fafafa; padding: 5px; }"
+        )
+
+        dashboard_layout.addWidget(self.status_label)
+        dashboard_layout.addWidget(QLabel("Saved Sessions:"))
+        dashboard_layout.addWidget(self.sessions_list)
+        dashboard_layout.addWidget(QLabel("Transcript:"))
+        dashboard_layout.addWidget(self.transcript_text)
+
+        self.dashboard_view.setLayout(dashboard_layout)
+
+        # Settings View
+        self.settings_view = QWidget()
+        settings_layout = QVBoxLayout()
+
+        mic_label = QLabel("Select Microphone:")
+        mic_label.setFont(QFont("Arial", 12))
+        mic_label.setStyleSheet("color: #333; margin-bottom: 10px;")
+
+        self.mic_selector = QComboBox()
+        self.populate_mic_list()
+        self.mic_selector.setStyleSheet(
+            "padding: 5px; border: 1px solid #3f72af; border-radius: 5px; background: #f0f0f0;"
+        )
+
+        settings_layout.addWidget(mic_label)
+        settings_layout.addWidget(self.mic_selector)
+        settings_layout.addStretch()
+        self.settings_view.setLayout(settings_layout)
+
+        # Add views to stacked widget
+        self.stacked_widget.addWidget(self.dashboard_view)
+        self.stacked_widget.addWidget(self.settings_view)
+
+        top_layout.addWidget(self.stacked_widget, 4)
+
+        # Right-side AI panel
+        ai_panel = QWidget()
+        ai_layout = QVBoxLayout(ai_panel)
+        ai_layout.setContentsMargins(10, 10, 10, 10)
+        ai_layout.setSpacing(10)
+        ai_panel.setStyleSheet("background-color: #8d99ae; border-radius: 10px;")
+
+        ai_label = QLabel("AI Panel")
+        ai_label.setFont(QFont("Arial", 14, QFont.Bold))
+        ai_label.setAlignment(Qt.AlignCenter)
+        ai_label.setStyleSheet("color: white; padding: 10px;")
+
+        self.ai_text = QTextEdit()
+        self.ai_text.setPlaceholderText("AI analysis will appear here...")
+        self.ai_text.setReadOnly(True)
+        self.ai_text.setStyleSheet(
+            "background-color: #edf2f4; border: 1px solid #ddd; padding: 10px; border-radius: 5px;"
+        )
+
+        ai_layout.addWidget(ai_label)
+        ai_layout.addWidget(self.ai_text)
+        top_layout.addWidget(ai_panel, 2)
+
+        main_layout.addLayout(top_layout)
+
+        # Bottom controls
+        bottom_controls = QHBoxLayout()
+
+        self.start_button = QPushButton("Start Recording")
+        self.start_button.setStyleSheet(self.button_style("#3f72af", "#2c5aa0"))
+        self.start_button.clicked.connect(self.start_recording)
+
+        self.stop_button = QPushButton("Stop Recording")
+        self.stop_button.setStyleSheet(self.button_style("#ef233c", "#d90429"))
+        self.stop_button.clicked.connect(self.stop_recording)
+
+        self.save_button = QPushButton("Save Recording")
+        self.save_button.setStyleSheet(self.button_style("#4caf50", "#388e3c"))
+        self.save_button.clicked.connect(self.save_recording)
+
+        self.transcript_button = QPushButton("Generate Transcript")
+        self.transcript_button.setStyleSheet(self.button_style("#f0ad4e", "#ec971f"))
+        self.transcript_button.clicked.connect(self.generate_transcript)
+
+        bottom_controls.addWidget(self.start_button)
+        bottom_controls.addWidget(self.stop_button)
+        bottom_controls.addWidget(self.save_button)
+        bottom_controls.addWidget(self.transcript_button)
+
+        main_layout.addLayout(bottom_controls)
+
+    def sidebar_button_style(self):
+        return (
+            "QPushButton { color: white; background-color: #2b2d42; border: none; padding: 15px; text-align: left; font-size: 16px; border-radius: 5px; } "
+            "QPushButton:hover { background-color: #3f72af; }"
+        )
+
+    def button_style(self, color, hover_color):
+        return f"""
+            QPushButton {{
+                background-color: {color};
+                color: white;
+                border: none;
+                border-radius: 10px;
+                padding: 10px 20px;
+                font-size: 14px;
+            }}
+            QPushButton:hover {{
+                background-color: {hover_color};
+            }}
+        """
+
+    def switch_view(self, index):
+        self.stacked_widget.setCurrentIndex(index)
+
+    def populate_mic_list(self):
+        mics = self.voice_control.get_available_microphones()
+        for index, name in mics:
+            self.mic_selector.addItem(name, index)
+
+    def start_recording(self):
+        mic_index = self.mic_selector.currentData()
+        if mic_index is None:
+            self.status_label.setText("Status: Please select a microphone.")
+            return
+
+        if self.voice_control.start_recording(mic_index):
+            self.status_label.setText("Status: Recording...")
+        else:
+            self.status_label.setText("Status: Failed to start recording.")
+
+    def stop_recording(self):
+        if self.voice_control.stop_recording():
+            self.status_label.setText("Status: Recording stopped.")
+        else:
+            self.status_label.setText("Status: Failed to stop recording.")
+
+    def save_recording(self):
+        file_name = self.voice_control.save_recording()
+        if file_name:
+            self.sessions_list.addItem(file_name)
+            self.status_label.setText(f"Status: Recording saved as {file_name}.")
+        else:
+            self.status_label.setText("Status: No recording to save.")
+
+    def generate_transcript(self):
+        if not self.sessions_list.selectedItems():
+            self.status_label.setText("Status: Please select a session.")
+            return
+
+        selected_file = self.sessions_list.selectedItems()[0].text()
+        file_path = os.path.join("Recordings", selected_file)
+
+        try:
+            transcript = transcribe_audio(file_path)
+            if transcript:
+                self.transcript_text.setText(transcript)
+                self.status_label.setText(f"Status: Transcript generated for {selected_file}.")
+            else:
+                self.status_label.setText("Status: Failed to generate transcript.")
+        except Exception as e:
+            self.status_label.setText("Status: Error generating transcript.")
+            print(f"Error: {e}")
+
+    def closeEvent(self, event):
+        self.voice_control.terminate()
+        event.accept()
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setStyleSheet("QMainWindow { background-color: #EDE7F6; }")
+    window = TherapyApp()
+    window.show()
+    sys.exit(app.exec_())
