@@ -70,4 +70,4 @@ CFS-Session-Documentor/
 - **Support for Multiple Languages**
 - **Cloud-Based Storage & Access**
 - **Advanced AI Model for More Context-Aware Notes**
-- **Integration with EHR Systems**
+- **Integration with EMR Systems**
