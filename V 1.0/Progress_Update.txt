@@ -56,12 +56,15 @@ The **CFS Session Documentor** is a powerful tool designed to assist therapists 
 - **Enhancing AI Output:** Improving transformer model accuracy for note generation.
 - **Integrating Offline Transcription:** Exploring Whisper or DeepSpeech for local speech-to-text processing.
 - **Optimization & Debugging:** Refining UI responsiveness and error handling.
+- **UI Update Patch!
 
 ###  **Upcoming Tasks:**
 - **Final Testing & Debugging:** Ensure a smooth user experience before submission.
 - **Documentation & README Updates:** Add detailed setup instructions and project details.
 - **YouTube Video Creation:** Prepare the final project demonstration video.
 - **GitHub Repository Cleanup:** Organize code, commit history, and screenshots for submission.
+
+
 
 ---
 
