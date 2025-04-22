@@ -25,7 +25,8 @@ This project is developed for **Child and Family Services (CFS)** and a level 1 
 
 ## Installation
 1. **Clone the Repository**
-
+    ```
+    Git clone https://github.com/RiskyTrick/Academic-Projects
    ```
 2. **Create a Virtual Environment (Optional but Recommended)**
    ```bash
@@ -64,7 +65,7 @@ CFS-Session-Documentor/
 
 
 ## Video Demo
-//yet to be created 
+https://youtu.be/vn2qdeaGOsg
 
 ## Future Enhancements
 - **Support for Multiple Languages**
